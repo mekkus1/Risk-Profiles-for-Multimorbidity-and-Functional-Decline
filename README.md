@@ -19,3 +19,39 @@ Key Findings
 - Modifiable targets: BMI, sleep quality, and perceived stress are key drivers of functional decline
 
 Repository Structure
+
+
+---
+
+## 🔧 Requirements
+
+### R Environment
+- R version 4.5.2 or higher
+- RStudio (recommended) or any R environment
+
+### Required R Packages
+```r
+# Core data science
+tidyverse     # Data manipulation and visualization (v2.0.0)
+haven         # SPSS data import (v2.5.4)
+janitor       # Data cleaning (v2.2.0)
+labelled      # Variable labels (v2.12.0)
+
+# Machine Learning
+caret         # Model training framework (v6.0-94)
+glmnet        # LASSO regression (v4.1-8)
+randomForest  # Random Forest models (v4.7-1.1)
+xgboost       # XGBoost models (v1.7.5.1)
+
+# Evaluation & Interpretation
+pROC          # ROC curve analysis (v1.18.5)
+SHAPforxgboost # SHAP values (v0.1.1)
+
+# Visualization
+ggplot2       # Figures (v3.4.4)
+gridExtra     # Multi-panel figures (v2.3)
+knitr         # Report generation (v1.45)
+
+# Missing Data
+missForest    # Missing data imputation (v1.5)
+
