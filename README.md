@@ -8,7 +8,7 @@ Overview
 
 This repository contains the complete R analysis code for the paper:
 
->Okeagu PN, Okeke G, Odu EC, Kebede YT. Mapping Shared Risk Profiles of Multimorbidity and Functional Decline Among U.S. Adults: A Supervised Machine Learning Analysis. *[Journal Name],* 2026.
+>Okeagu PN, Okeke G, Odu EC, Kebede YT. Mapping Shared Risk Profiles of Multimorbidity and Functional Decline Among U.S. Adults: A Supervised Machine Learning Analysis. 2026.
 
 We used machine learning to identify shared and distinct risk clusters for multimorbidity and functional decline in 2,154 participants from the MIDUS Refresher 2 study (ages 25-74).
 
