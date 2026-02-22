@@ -1,6 +1,6 @@
 # Mapping Shared Risk Profiles of Multimorbidity and Functional Decline in U.S. Adults
 
-[![R](https://img.shields.io/badge/R-4.4.0-blue.svg)](https://www.r-project.org/)
+[![R](https://img.shields.io/badge/R-4.5.2-blue.svg)](https://www.r-project.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Overview
