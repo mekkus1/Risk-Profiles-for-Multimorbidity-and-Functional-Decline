@@ -1,13 +1,15 @@
 ############################################################
 # MIDUS Refresher 2: Machine Learning Analysis
-# Mapping Shared Risk Profiles of Multimorbidity and 
+# Mapping Shared Risk Profiles of Multimorbidity and
 # Functional Decline in U.S. Adults
 #
 # Author: Philips N. Okeagu
 # Contact: philipsokeagu@hsph.harvard.edu
 #
+# Repository: https://github.com/mekkus1/Risk-Profiles-for-Multimorbidity-and-Functional-Decline
+# Date: 2026
 #
-# Description: 
+# Description:
 # This script performs supervised machine learning analysis
 # to identify risk clusters for multimorbidity and functional
 # decline using MIDUS Refresher 2 data.
@@ -49,7 +51,7 @@ if(length(new_packages)) install.packages(new_packages)
 # Load packages
 invisible(lapply(required_packages, library, character.only = TRUE))
 
-# Package versions for reproducibility (FIXED)
+# Package versions for reproducibility
 cat("\n=== R Package Versions ===\n")
 cat("R version:", R.version.string, "\n")
 cat("tidyverse:", as.character(packageVersion("tidyverse")), "\n")
@@ -64,42 +66,43 @@ cat("pROC:", as.character(packageVersion("pROC")), "\n")
 # =========================
 
 #' Load MIDUS Refresher 2 SPSS Data
-#' 
+#'
 #' @param file_path Path to the SPSS .sav file
 #' @return Cleaned dataframe with numeric variables
 
 load_midus_data <- function(file_path) {
-  
+
   cat("\n=== Loading MIDUS Refresher 2 Data ===\n")
-  
+
   if(!file.exists(file_path)) {
     stop("Data file not found at: ", file_path)
   }
-  
+
   midus_raw <- read_sav(file_path)
-  
+
   midus <- midus_raw %>%
     clean_names() %>%
     mutate(across(
-      where(~inherits(., "haven_labelled")), 
+      where(~inherits(., "haven_labelled")),
       ~as.numeric(as.character(.))
     ))
-  
+
   cat("Data loaded successfully\n")
   cat("Sample size:", nrow(midus), "participants\n")
   cat("Number of variables:", ncol(midus), "\n")
-  
+
   return(midus)
 }
 
 # Update this path to your data location
-# For users: update the path below
+# For users: update the path below (e.g., "data/MR2_P1_SURVEY_N2154_20251003 (1).sav")
 data_path <- ""
 
 # Check if here package is available for path management
 if(requireNamespace("here", quietly = TRUE)) {
   library(here)
   cat("Using 'here' package for path management\n")
+  data_path <- here("data", "MR2_P1_SURVEY_N2154_20251003 (1).sav")
 }
 
 midus <- load_midus_data(data_path)
@@ -118,7 +121,7 @@ midus <- midus %>%
     rb1pb16 = "Income",
     rb1pb19 = "Marital status",
     rb1sf17b = "Employment status",
-    
+
     # Chronic Conditions
     rb1sa11s = "Hypertension",
     rb1sa11x = "Diabetes",
@@ -128,7 +131,7 @@ midus <- midus %>%
     rb1sa11c = "Lung disease",
     rb1sa11d = "Joint/Bone disease",
     rb1pa2 = "Mental/Emotional disorder",
-    
+
     # Functional Limitations
     rb1sa24b = "Bathing/Dressing limitation",
     rb1sa24f = "Walking >1 mile limitation",
@@ -138,38 +141,38 @@ midus <- midus %>%
     rb1pd12 = "Shopping/cooking/housework limitation",
     rb1sbadl1 = "Basic ADL limitation",
     rb1pa1 = "Self-rated physical health",
-    
+
     # Mental Health
     rb1pa60 = "Depressive episode ≥2 weeks",
     rb1pg100b = "Loneliness",
     rb1sa20b = "Nervous frequency",
     rb1sa20d = "Hopeless frequency",
     rb1sa20f = "Worthless frequency",
-    
+
     # Sleep
     rb1sa53a = "Sleep hours",
     rb1sa57a = "Trouble falling asleep",
     rb1sa57b = "Night waking",
     rb1sa57d = "Unrested during day",
-    
+
     # Body
     rb1sa33a = "Height (feet)",
     rb1sa35 = "Weight (pounds)",
     rb1sbmi = "BMI",
     rb1sa31 = "Waist circumference",
-    
+
     # Stress
     rb1se1z = "Feeling overwhelmed",
     rb1se4e = "Life beyond control",
     rb1sp1e = "Fired times",
-    
+
     # Health Behaviors
     rb1pa39 = "Current smoker",
     rb1pa40 = "Cigarettes per day",
     rb1pa51 = "Alcohol use frequency",
     rb1pa55 = "Drinks per occasion",
     rb1sa52f = "Exercise frequency",
-    
+
     # Social Support
     rb1se1p = "Few close friends",
     rb1sh10a = "Emotional support spouse",
@@ -201,13 +204,13 @@ midus <- midus %>%
     # Multimorbidity (≥2 chronic conditions)
     disease_count = rowSums(midus[, disease_vars] == 1, na.rm = TRUE),
     multimorbidity = ifelse(disease_count >= 2, 1, 0),
-    
+
     # Functional decline - at least ONE limitation in ADL/IADL (score ≥2)
     func_decline_true = ifelse(
       rowSums(midus[, true_func_vars] >= 2, na.rm = TRUE) >= 1,
       1, 0
     ),
-    
+
     # Secondary outcomes for sensitivity analyses
     any_adl = ifelse(rb1sbadl1 > 1, 1, 0),
     any_iadl = ifelse(rb1pd12 > 1, 1, 0)
@@ -215,13 +218,13 @@ midus <- midus %>%
 
 # Display outcome prevalence
 cat("\n=== Outcome Prevalence ===\n")
-cat("Multimorbidity:", 
+cat("Multimorbidity:",
     round(mean(midus$multimorbidity, na.rm = TRUE) * 100, 1), "%\n")
-cat("Functional Decline (ADL/IADL):", 
+cat("Functional Decline (ADL/IADL):",
     round(mean(midus$func_decline_true, na.rm = TRUE) * 100, 1), "%\n")
-cat("  - Any ADL limitation:", 
+cat("  - Any ADL limitation:",
     round(mean(midus$any_adl, na.rm = TRUE) * 100, 1), "%\n")
-cat("  - Any IADL limitation:", 
+cat("  - Any IADL limitation:",
     round(mean(midus$any_iadl, na.rm = TRUE) * 100, 1), "%\n")
 
 # =========================
@@ -323,8 +326,8 @@ cat("\nMissing data handled\n")
 
 set.seed(42)
 train_index <- createDataPartition(
-  ml_data$multimorbidity, 
-  p = 0.7, 
+  ml_data$multimorbidity,
+  p = 0.7,
   list = FALSE
 )
 train <- ml_data[train_index, ]
@@ -346,23 +349,23 @@ cat("Test set: n =", nrow(test), "\n")
 #' @return Data frame with performance metrics
 
 evaluate_model <- function(actual, predicted, model_name, outcome) {
-  
+
   roc_obj <- roc(actual, predicted, quiet = TRUE)
   auc_val <- auc(roc_obj)
-  
-  youden <- coords(roc_obj, "best", 
+
+  youden <- coords(roc_obj, "best",
                    ret = c("threshold", "sensitivity", "specificity"))
-  
+
   pred_class <- ifelse(predicted > youden$threshold[1], 1, 0)
-  
+
   cm <- confusionMatrix(
-    as.factor(pred_class), 
-    as.factor(actual), 
+    as.factor(pred_class),
+    as.factor(actual),
     positive = "1"
   )
-  
+
   brier <- mean((predicted - actual)^2)
-  
+
   data.frame(
     Outcome = outcome,
     Model = model_name,
@@ -393,11 +396,11 @@ x_test_mm <- as.matrix(test[, !names(test) %in% "multimorbidity"])
 
 set.seed(123)
 cv_lasso_mm <- cv.glmnet(
-  x_train_mm, y_train_mm, 
+  x_train_mm, y_train_mm,
   family = "binomial", alpha = 1, nfolds = 5
 )
 lasso_model_mm <- glmnet(
-  x_train_mm, y_train_mm, 
+  x_train_mm, y_train_mm,
   family = "binomial", alpha = 1, lambda = cv_lasso_mm$lambda.min
 )
 lasso_pred_mm <- predict(lasso_model_mm, x_test_mm, type = "response")[,1]
@@ -405,7 +408,7 @@ lasso_pred_mm <- predict(lasso_model_mm, x_test_mm, type = "response")[,1]
 # 10.3 Random Forest
 set.seed(123)
 rf_model_mm <- randomForest(
-  as.factor(multimorbidity) ~ ., 
+  as.factor(multimorbidity) ~ .,
   data = train, ntree = 500, importance = TRUE
 )
 rf_pred_mm <- predict(rf_model_mm, test, type = "prob")[,2]
@@ -414,11 +417,11 @@ rf_pred_mm <- predict(rf_model_mm, test, type = "prob")[,2]
 feature_names_mm <- colnames(train[, !names(train) %in% "multimorbidity"])
 
 xgb_train_mm <- xgb.DMatrix(
-  data = as.matrix(train[, feature_names_mm]), 
+  data = as.matrix(train[, feature_names_mm]),
   label = train$multimorbidity
 )
 xgb_test_mm <- xgb.DMatrix(
-  data = as.matrix(test[, feature_names_mm]), 
+  data = as.matrix(test[, feature_names_mm]),
   label = test$multimorbidity
 )
 
@@ -432,9 +435,9 @@ params <- list(
 )
 
 xgb_model_mm <- xgb.train(
-  params = params, 
-  data = xgb_train_mm, 
-  nrounds = 100, 
+  params = params,
+  data = xgb_train_mm,
+  nrounds = 100,
   verbose = 0
 )
 xgb_pred_mm <- predict(xgb_model_mm, xgb_test_mm)
@@ -466,11 +469,11 @@ x_test_fd <- as.matrix(test[, !names(test) %in% "functional_decline"])
 
 set.seed(123)
 cv_lasso_fd <- cv.glmnet(
-  x_train_fd, y_train_fd, 
+  x_train_fd, y_train_fd,
   family = "binomial", alpha = 1, nfolds = 5
 )
 lasso_model_fd <- glmnet(
-  x_train_fd, y_train_fd, 
+  x_train_fd, y_train_fd,
   family = "binomial", alpha = 1, lambda = cv_lasso_fd$lambda.min
 )
 lasso_pred_fd <- predict(lasso_model_fd, x_test_fd, type = "response")[,1]
@@ -478,7 +481,7 @@ lasso_pred_fd <- predict(lasso_model_fd, x_test_fd, type = "response")[,1]
 # 11.3 Random Forest
 set.seed(123)
 rf_model_fd <- randomForest(
-  as.factor(functional_decline) ~ ., 
+  as.factor(functional_decline) ~ .,
   data = train, ntree = 500, importance = TRUE
 )
 rf_pred_fd <- predict(rf_model_fd, test, type = "prob")[,2]
@@ -487,18 +490,18 @@ rf_pred_fd <- predict(rf_model_fd, test, type = "prob")[,2]
 feature_names_fd <- colnames(train[, !names(train) %in% "functional_decline"])
 
 xgb_train_fd <- xgb.DMatrix(
-  data = as.matrix(train[, feature_names_fd]), 
+  data = as.matrix(train[, feature_names_fd]),
   label = train$functional_decline
 )
 xgb_test_fd <- xgb.DMatrix(
-  data = as.matrix(test[, feature_names_fd]), 
+  data = as.matrix(test[, feature_names_fd]),
   label = test$functional_decline
 )
 
 xgb_model_fd <- xgb.train(
-  params = params, 
-  data = xgb_train_fd, 
-  nrounds = 100, 
+  params = params,
+  data = xgb_train_fd,
+  nrounds = 100,
   verbose = 0
 )
 xgb_pred_fd <- predict(xgb_model_fd, xgb_test_fd)
@@ -553,8 +556,8 @@ lasso_coef_mm <- data.frame(
   Coefficient = lasso_coef_mm[,1]
 )
 lasso_coef_mm <- lasso_coef_mm[
-  lasso_coef_mm$Coefficient != 0 & 
-    lasso_coef_mm$Variable != "(Intercept)", 
+  lasso_coef_mm$Coefficient != 0 &
+    lasso_coef_mm$Variable != "(Intercept)",
 ]
 lasso_coef_mm <- lasso_coef_mm[order(-abs(lasso_coef_mm$Coefficient)), ]
 
@@ -564,8 +567,8 @@ lasso_coef_fd <- data.frame(
   Coefficient = lasso_coef_fd[,1]
 )
 lasso_coef_fd <- lasso_coef_fd[
-  lasso_coef_fd$Coefficient != 0 & 
-    lasso_coef_fd$Variable != "(Intercept)", 
+  lasso_coef_fd$Coefficient != 0 &
+    lasso_coef_fd$Variable != "(Intercept)",
 ]
 lasso_coef_fd <- lasso_coef_fd[order(-abs(lasso_coef_fd$Coefficient)), ]
 
@@ -607,59 +610,7 @@ write.csv(mean_shap_mm, "tables/shap_importance_multimorbidity.csv", row.names =
 write.csv(mean_shap_fd, "tables/shap_importance_functional_decline.csv", row.names = FALSE)
 
 # =========================
-# 15. Generate README
-# =========================
-
-sink("README.md")
-cat("# MIDUS Machine Learning Analysis\n")
-cat("## Mapping Shared Risk Profiles of Multimorbidity and Functional Decline\n\n")
-cat("This repository contains code for the analysis presented in:\n")
-cat("> Okeagu PN, Okeke G, Odu EC, Kebede YT. Mapping Shared Risk Profiles ")
-cat("of Multimorbidity and Functional Decline Among U.S. Adults: ")
-cat("A Supervised Machine Learning Analysis.\n\n")
-
-cat("## Repository Structure\n")
-cat("```\n")
-cat("├── data/               # MIDUS data (not included, see below)\n")
-cat("├── scripts/            # R analysis scripts\n")
-cat("├── output/             # Generated output files\n")
-cat("│   ├── tables/         # CSV tables\n")
-cat("│   └── figures/        # PNG/PDF figures\n")
-cat("└── README.md           # This file\n")
-cat("```\n\n")
-
-cat("## Requirements\n")
-cat("R version 4.4.0 with packages:\n")
-cat("- tidyverse\n")
-cat("- haven\n")
-cat("- missForest\n")
-cat("- caret\n")
-cat("- glmnet\n")
-cat("- randomForest\n")
-cat("- xgboost\n")
-cat("- pROC\n")
-cat("- SHAPforxgboost\n")
-cat("- janitor\n\n")
-
-cat("## Data Availability\n")
-cat("The MIDUS Refresher 2 data are available from the\n")
-cat("Inter-university Consortium for Political and Social Research (ICPSR)\n")
-cat("at: https://www.icpsr.umich.edu/web/ICPSR/series/203\n\n")
-
-cat("## Reproducibility\n")
-cat("1. Download MIDUS Refresher 2 data from ICPSR\n")
-cat("2. Update the file path in the script\n")
-cat("3. Run `midus_ml_analysis.R`\n")
-cat("4. Results will be saved in `output/` directory\n\n")
-
-cat("## Citation\n")
-cat("If you use this code, please cite:\n")
-cat("Okeagu PN, et al. (2026). Mapping Shared Risk Profiles ")
-cat("of Multimorbidity and Functional Decline...\n")
-sink()
-
-# =========================
-# 16. Session Info
+# 15. Generate Session Info
 # =========================
 
 sink("output/session_info.txt")
